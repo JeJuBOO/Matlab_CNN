@@ -9,27 +9,42 @@ clc,clear,close all
 % labels : 1 x 6000
 % sk.boo
 
-%% set up
-% training set (MNIST)
-load C:\oneDrive\Learning_Data\mnist\trainingData.mat;
-% images = images(:,:,1:1000);
-% labels = labels(:,1:1000);
-x = reshape(images, 28,28,1,[]);
-one_hot = diag(ones(1,max(labels)+1));
-y = one_hot(labels+1,:)';
+%% 변수 설정
+% 데이터 경로
+traindata_dir = 'C:\oneDrive\Learning_Data\mnist\trainingData.mat';
+testdata_dir = 'C:\oneDrive\Learning_Data\mnist\testingData.mat';
 
-% validation set (MNIST)
-load C:\oneDrive\Learning_Data\mnist\testingData.mat;
-
-%% 커널 크기
+% 커널 크기
 kernelSize1 = [3 3 1 10];
 kernelSize2 = [4 4 10 10];
 
-%% 풀링 사이즈
+% 풀링 사이즈
 poolDim1 = 2;
 poolDim2 = 2;
+lr = 0.01; % 학습률
+lambda = 0.0001; %weight decay
+alpha_m = 0.5; 
+alpha_r = 0.99;
 
-%% 모델 사이즈
+%세대 수 (epoch)
+epo = 1;
+
+%배치 수
+batch = 100;
+
+%% 이미지 불러오기
+% training set (MNIST)
+traindata = load(dataset_dir);
+% images = images(:,:,1:1000);
+% labels = labels(:,1:1000);
+x = reshape(traindata.images, 28,28,1,[]);
+one_hot = diag(ones(1,max(traindata.labels)+1));
+y = one_hot(traindata.labels+1,:)';
+
+% validation set (MNIST)
+testdata = load(testdata_dir);
+
+%% 모델 사이즈 
 imageDim = size(x,1);
 labelClasses = size(y,1);
 layerDim1 = ( imageDim - kernelSize1(1) + 1 )/poolDim1;
@@ -37,24 +52,12 @@ layerDim2 = ( layerDim1 - kernelSize2(1) + 1 )/poolDim2;
 layerDim3 = layerDim2^2*kernelSize2(4);
 kernelSize3 = [labelClasses layerDim3];
 
-%% Parameter
-lr = 0.01; % 학습률
-lambda = 0.0001; %weight decay
-alpha_m = 0.5;
-alpha_r = 0.99;
-
-%세대 수 (epoch)
-epo = 1;
-
-%배치 수
-batch = 101;
-
 %% 커널 사이즈
 U1 = (1e-1)*randn(kernelSize1); B1 = zeros(kernelSize1(4), 1);
 U2 = (1e-1)*randn(kernelSize2); B2 = zeros(kernelSize2(4), 1);
 U3 = (1e-1)*randn(kernelSize3); B3 = zeros(labelClasses, 1);
 
-% momentum
+% momentum 
 v1 = zeros(size(U1)); vb1 = zeros(size(B1));
 v2 = zeros(size(U2)); vb2 = zeros(size(B2));
 v3 = zeros(size(U3)); vb3 = zeros(size(B3));
@@ -65,7 +68,6 @@ r2 = zeros(size(U2)); rb2 = zeros(size(B2));
 r3 = zeros(size(U3)); rb3 = zeros(size(B3));
 
 idx=0;
-
 %%
 for e = 1:epo
     % data shuffle
